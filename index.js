@@ -2,16 +2,15 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 
+const router = require('./routes/router');
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(cors());
 
-// Define a route
-app.post('/login', (req, res) => {
-    console.log(req.body);
-    res.send(req.body);
-});
+// ENDPOINT
+app.use('/', router);
 
 // Start the server
 const port = 3002;
