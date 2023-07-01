@@ -40,7 +40,7 @@ module.exports = async function (req, res) {
         if (isPasswordMatch) {
             console.log(user.dataValues);
             const token = await generateToken(user.dataValues);
-            return res.send({
+            return res.status(200).send({
                 token,
                 role: 1
             });
