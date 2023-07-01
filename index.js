@@ -10,7 +10,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 // ENDPOINT
-app.use('/', router);
+app.use('/api', router);
 
 // Start the server
 const port = 3002;

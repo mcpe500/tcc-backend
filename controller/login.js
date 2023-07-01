@@ -1,99 +1,57 @@
 const Joi = require("joi");
-const sequelize = require("../database/db");
-const jwt = require('jsonwebtoken');
-const env = require("../config/env.json");
-const { check } = require("../encrypt/encrypt");
-const User = require("../models/userModels");
-const JWT_SECRET = env.JWT_SECRET;
 
+const { check } = require("../encrypt/encrypt");
+const { findEmail } = require("../utils/databaseCommands");
+const { generateToken } = require("../utils/jwtCommands")
 
 module.exports = async function (req, res) {
-    console.log(req.body)
-    let { email, password } = req.body;
-    email = email.value;
-    password = password.value;
-    const schema = Joi.object({
-        email: Joi.string().required(),
-        password: Joi.string().min(8).required(),
-    });
-    console.log("username:pass: ", email, password);
-    const { error } = schema.validate({ email, password });
-    if (error) {
-        return res.status(400).send(error.details[0].message);
-    }
     try {
-        const userResult = await User.findOne({
-            where: { email }
+        const { email, password } = req.body;
+
+        const schema = Joi.object({
+            email: Joi.string().email().required().messages({
+                'string.base': 'Email must be a string',
+                'string.empty': 'Email is required',
+                'string.email': 'Email must be a valid email address',
+                'any.required': 'Email is required',
+            }),
+            password: Joi.string().min(8).required().messages({
+                'string.base': 'Password must be a string',
+                'string.empty': 'Password is required',
+                'string.min': 'Password must be at least 8 characters long',
+                'any.required': 'Password is required',
+            }),
         });
-        const user = userResult.dataValues;
-        console.log(user);
-        if (user) {
-            let isPasswordMatch = await check(password, user.password);
-            if (isPasswordMatch) {
-                const token = jwt.sign(user, JWT_SECRET, {
-                    expiresIn: '1h'
-                })
-                return res.send({
-                    token,
-                    role: 1
-                });
-            }
+        console.log(email, password);
+        const { error } = schema.validate({ email, password });
+        if (error) {
+            return res.status(400).send(error.details[0].message);
         }
-        console.log(user);
-        res.send(user);
-        // if (teachers) {
-        //     let isPasswordMatch = await check(password, teachers.password);
-        //     if (isPasswordMatch) {
-        //         const token = jwt.sign(teachers, JWT_SECRET, {
-        //             expiresIn: '1h'
-        //         })
-        //         return res.send({
-        //             token,
-        //             role: 1
-        //         });
-        //     }
-        // }
-        // console.log(username, password);
-        // const queryTeachers = 'SELECT * FROM teachers WHERE (username = ? or email = ?)';
-        // const [teachers, teachersMetadata] = await sequelize.query(queryTeachers, {
-        //     replacements: [username, username],
-        //     type: sequelize.QueryTypes.SELECT,
-        // });
-        // if (teachers) {
-        //     let isPasswordMatch = await check(password, teachers.password);
-        //     if (isPasswordMatch) {
-        //         const token = jwt.sign(teachers, JWT_SECRET, {
-        //             expiresIn: '1h'
-        //         })
-        //         return res.send({
-        //             token,
-        //             role: 1
-        //         });
-        //     }
-        // }
-        // const queryStudents = 'SELECT * FROM students WHERE (username = ? or email = ?)';
-        // let [students, studentsMetadata] = await sequelize.query(queryStudents, {
-        //     replacements: [username, username],
-        //     type: sequelize.QueryTypes.SELECT,
-        // });
-        // if (students) {
-        //     isPasswordMatch = await check(password, students.password);
-        //     if (isPasswordMatch) {
-        //         const token = jwt.sign(students, JWT_SECRET, {
-        //             expiresIn: '1h'
-        //         })
-        //         return res.send({
-        //             token,
-        //             role: 1
-        //         });
-        //     }
-        // }
-        // return res.status(400).send({
-        //     error: "Username or password is wrong",
-        //     role: -1
-        // });
+
+        const user = await findEmail(email);
+        if (!user) {
+            return res.status(400).send({
+                error: "Email or password is incorrect",
+                role: -1
+            });
+        }
+
+        const isPasswordMatch = await check(password, user.password);
+        if (isPasswordMatch) {
+            console.log(user.dataValues);
+            const token = await generateToken(user.dataValues);
+            return res.send({
+                token,
+                role: 1
+            });
+        }
+
+        return res.status(400).send({
+            error: "Email or password is incorrect",
+            role: -1
+        });
     } catch (error) {
         console.error(error);
-        res.status(500).send(error);
+        return res.status(500).send("Internal server error");
     }
 };
