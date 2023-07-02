@@ -1,5 +1,6 @@
 const { callFetchSubmission } = require("../utils/editorCommands");
 const { verifyToken } = require("../utils/jwtCommands");
+const { judge0_server } = require("../config/env.json");
 const axios = require("axios");
 
 module.exports = async (req, res) => {
@@ -11,12 +12,12 @@ module.exports = async (req, res) => {
         console.log(isTrueToken);
         if (isTrueToken) {
             const { source_code, language_id } = req.body;
-            // console.log(source_code, language_id);
+            console.log(source_code, language_id);
 
             await axios
-                .post("http://localhost:2358/submissions", {
-                    source_code,
-                    language_id,
+                .post(judge0_server + "/submissions", {
+                    source_code: source_code,
+                    language_id: language_id,
                 })
                 .then(async (response) => {
                     const { token } = response.data;
