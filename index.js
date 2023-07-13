@@ -9,10 +9,8 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(cors());
 
-// ENDPOINT
 app.use('/api', router);
 
-// Start the server
 const port = 3002;
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);

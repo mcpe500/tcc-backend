@@ -17,5 +17,5 @@ module.exports = sequelize.define('User', {
     allowNull: false
   }
 }, {
-  timestamps: false // Disable timestamps (createdAt, updatedAt)
+  timestamps: false
 });;
